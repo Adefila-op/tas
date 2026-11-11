@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tasking</title>
+<meta name="description" content="Tasking: compare images and videos against your guidelines, build trap tasks, and answer page questions from your phone.">
+<style>
+  :root { --bg:#0a0a0a; --card:#131313; --line:#2a2a2a; --text:#f4f4f4; --muted:#9a9a9a; --ok:#4ade80; --bad:#f87171; --warn:#fbbf24; }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 22px 20px 70px; }
+  header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 56px; }
+  .brand { font-weight: 800; font-size: 20px; letter-spacing: -0.3px; }
+  .hero { display:grid; grid-template-columns: 1.15fr 1fr; gap: 44px; align-items:start; }
+  @media (max-width: 860px) { .hero { grid-template-columns: 1fr; gap: 28px; } header { margin-bottom: 30px; } }
+  h1 { font-size: clamp(34px, 6vw, 54px); line-height: 1.05; letter-spacing: -1.2px; margin: 0 0 16px; }
+  .lead { color: var(--muted); font-size: 18px; margin: 0 0 26px; max-width: 34em; }
+  ul.points { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+  ul.points li { padding-left: 16px; border-left: 2px solid var(--line); }
+  ul.points b { display:block; }
+  ul.points span { color: var(--muted); font-size: 15px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+  h2 { font-size: 20px; margin: 0 0 6px; }
+  .muted { color: var(--muted); font-size: 14px; margin: 0; }
+  label { display:block; font-size: 13px; color: var(--muted); margin: 16px 0 6px; }
+  input { width:100%; background:#0d0d0d; color:var(--text); border:1px solid var(--line); border-radius:12px; padding:14px; font:600 17px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform:uppercase; letter-spacing:.5px; }
+  input::placeholder { color:#555; font-weight:400; }
+  input:focus-visible, button:focus-visible, a.btn:focus-visible { outline: 2px solid #777; outline-offset: 2px; }
+  button, a.btn { display:block; width:100%; text-align:center; text-decoration:none; background:var(--text); color:#000; border:0; border-radius:12px; padding:14px 18px; font:inherit; font-weight:700; cursor:pointer; margin-top:14px; }
+  button.ghost { background:transparent; color:var(--muted); border:1px solid var(--line); font-weight:500; }
+  button:disabled { opacity:.6; cursor:default; }
+  #note { min-height: 22px; margin: 12px 0 0; font-size: 14px; color: var(--bad); }
+  .pill { display:inline-block; font-size:13px; font-weight:600; padding:3px 11px; border-radius:999px; border:1px solid var(--line); margin-bottom:12px; }
+  .pill.ok { color:var(--ok); border-color:#1f5c38; } .pill.bad { color:var(--bad); border-color:#5a2a2a; } .pill.warn { color:var(--warn); border-color:#5c4a1a; }
+  dl { display:grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 14px 0 4px; font-size: 15px; }
+  dt { color: var(--muted); } dd { margin: 0; text-align: right; }
+  .code { font: 600 16px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  ol.steps { margin: 18px 0 0; padding-left: 20px; color: var(--muted); font-size: 14px; display:grid; gap: 6px; }
+  footer { margin-top: 60px; color:#555; font-size: 13px; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header><div class="brand">Tasking</div></header>
+
+  <div class="hero">
+    <section>
+      <h1>Judge faster. Build harder tasks.</h1>
+      <p class="lead">Tasking is a phone app that checks your work against the project's own guidelines, and builds tasks that expose where AI models go wrong.</p>
+      <ul class="points">
+        <li><b>Compare two items</b><span>Images or videos, scored rubric by rubric against your guide.</span></li>
+        <li><b>Lumiere Studio</b><span>The AI writes a blind-spot task, makes the image, and tests it on a model.</span></li>
+        <li><b>Page assistant</b><span>Snap a task page and get the answer to the question on it.</span></li>
+      </ul>
+    </section>
+
+    <section class="card" aria-live="polite">
+      <div id="signin">
+        <h2>Sign in</h2>
+        <p class="muted">Enter your access code to see your account and download the app.</p>
+        <form id="f">
+          <label for="code">Access code</label>
+          <input id="code" placeholder="TASK-2026-XXXXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+          <button id="go" type="submit">Sign in</button>
+        </form>
+        <p id="note" role="alert"></p>
+      </div>
+
+      <div id="account" hidden>
+        <span id="pill" class="pill"></span>
+        <h2 id="hello"></h2>
+        <p class="muted" id="summary"></p>
+        <dl>
+          <dt>Code</dt><dd class="code" id="aCode"></dd>
+          <dt>Access ends</dt><dd id="aEnds"></dd>
+          <dt>Phones</dt><dd id="aPhones"></dd>
+        </dl>
+        <a id="download" class="btn" hidden rel="noopener">Download for Android</a>
+        <p class="muted" id="dlNote" style="margin-top:10px"></p>
+        <ol class="steps" id="steps" hidden>
+          <li>Open the downloaded file. If Android asks, allow installs from your browser.</li>
+          <li>Open Tasking and enter the access code shown above.</li>
+          <li>In Settings, add your Anthropic API key and tap "Test key".</li>
+        </ol>
+        <button class="ghost" id="out" type="button">Sign out</button>
+      </div>
+    </section>
+  </div>
+
+  <footer>A code works on the phone it is first used on. Changing phone? Ask for your code to be reset.</footer>
+</main>
+
+<script>
+  // The publishable key is safe in a web page: it can only call the checked access functions.
+  const SUPABASE_URL = "https://lfdlhgfahtknkzgezldv.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_A5dYhVJLUFd-sXqni6QpRg_EHnG95ha";
+  const $ = (id) => document.getElementById(id);
+  const day = (v) => new Date(v).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+  const remember = { get() { try { return localStorage.getItem("tasking_code") || ""; } catch { return ""; } }, set(v) { try { v ? localStorage.setItem("tasking_code", v) : localStorage.removeItem("tasking_code"); } catch {} } };
+
+  async function portal(code) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/customer_portal`, {
+      method: "POST",
+      headers: { "content-type": "application/json", apikey: SUPABASE_PUBLISHABLE_KEY, authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}` },
+      body: JSON.stringify({ p_code: code }),
+    });
+    if (!res.ok) throw new Error("unreachable");
+    return res.json();
+  }
+
+  function show(a) {
+    const left = a.expires_at ? Math.max(0, Math.ceil((new Date(a.expires_at) - new Date()) / 86400000)) : null;
+    let pill, kind, summary;
+    if (a.revoked) { pill = "Switched off"; kind = "bad"; summary = "This code has been switched off. Contact whoever gave it to you."; }
+    else if (a.expired) { pill = "Expired"; kind = "bad"; summary = "Your access has ended. Ask for a renewal to keep using the app."; }
+    else if (!a.expires_at) { pill = "Ready to use"; kind = "warn"; summary = `Not activated yet. Your ${a.valid_days} days start when you first enter the code in the app.`; }
+    else { pill = `Active · ${left} day${left === 1 ? "" : "s"} left`; kind = "ok"; summary = "Your access is active."; }
+    $("pill").textContent = pill; $("pill").className = "pill " + kind;
+    $("hello").textContent = a.label ? `Hello, ${a.label}` : "Your account";
+    $("summary").textContent = summary;
+    $("aCode").textContent = a.code;
+    $("aEnds").textContent = a.expires_at ? day(a.expires_at) : `${a.valid_days} days after first use`;
+    $("aPhones").textContent = `${a.devices_used} of ${a.max_devices} in use`;
+    const usable = !a.revoked && !a.expired;
+    const link = usable && /^https:\/\//.test(a.apk_url || "") ? a.apk_url : "";
+    $("download").hidden = !link; $("steps").hidden = !link;
+    if (link) { $("download").href = link; $("download").textContent = a.apk_version ? `Download for Android · v${a.apk_version}` : "Download for Android"; }
+    $("dlNote").textContent = link ? "Android only for now." : usable ? "The download isn't available yet. Check back soon." : "";
+    $("signin").hidden = true; $("account").hidden = false;
+  }
+
+  async function signIn(code, quiet) {
+    $("note").textContent = ""; $("go").disabled = true; $("go").textContent = "Checking…";
+    try {
+      const a = await portal(code);
+      if (!a.found) { remember.set(""); if (!quiet) $("note").textContent = "That code isn't recognised. Check it and try again."; return; }
+      remember.set(a.code); show(a);
+    } catch {
+      if (!quiet) $("note").textContent = "Could not reach the service. Check your connection and try again.";
+    } finally {
+      $("go").disabled = false; $("go").textContent = "Sign in";
+    }
+  }
+
+  $("f").addEventListener("submit", (ev) => { ev.preventDefault(); signIn($("code").value.trim()); });
+  $("out").addEventListener("click", () => { remember.set(""); $("code").value = ""; $("account").hidden = true; $("signin").hidden = false; });
+  if (remember.get()) signIn(remember.get(), true);
+</script>
+</body>
+</html>
