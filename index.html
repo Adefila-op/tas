@@ -38,6 +38,7 @@
   dt { color: var(--muted); } dd { margin: 0; text-align: right; }
   .code { font: 600 16px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
   ol.steps { margin: 18px 0 0; padding-left: 20px; color: var(--muted); font-size: 14px; display:grid; gap: 6px; }
+  a.hero-btn { width:auto; display:inline-block; padding:15px 26px; margin-top:0; }
   footer { margin-top: 60px; color:#555; font-size: 13px; }
   [hidden] { display:none !important; }
 </style>
@@ -50,6 +51,8 @@
     <section>
       <h1>Judge faster. Build harder tasks.</h1>
       <p class="lead">Tasking is a phone app that checks your work against the project's own guidelines, and builds tasks that expose where AI models go wrong.</p>
+      <a id="download" class="btn hero-btn" hidden rel="noopener">Download for Android</a>
+      <p class="muted" id="dlNote" style="margin:10px 0 28px"></p>
       <ul class="points">
         <li><b>Compare two items</b><span>Images or videos, scored rubric by rubric against your guide.</span></li>
         <li><b>Lumiere Studio</b><span>The AI writes a blind-spot task, makes the image, and tests it on a model.</span></li>
@@ -57,10 +60,11 @@
       </ul>
     </section>
 
+    <div>
     <section class="card" aria-live="polite">
       <div id="signin">
-        <h2>Sign in</h2>
-        <p class="muted">Enter your access code to see your account and download the app.</p>
+        <h2>Have a code?</h2>
+        <p class="muted">Sign in to see how long your access lasts and which phones use it.</p>
         <form id="f">
           <label for="code">Access code</label>
           <input id="code" placeholder="TASK-2026-XXXXXXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
@@ -78,16 +82,18 @@
           <dt>Access ends</dt><dd id="aEnds"></dd>
           <dt>Phones</dt><dd id="aPhones"></dd>
         </dl>
-        <a id="download" class="btn" hidden rel="noopener">Download for Android</a>
-        <p class="muted" id="dlNote" style="margin-top:10px"></p>
-        <ol class="steps" id="steps" hidden>
-          <li>Open the downloaded file. If Android asks, allow installs from your browser.</li>
-          <li>Open Tasking and enter the access code shown above.</li>
-          <li>In Settings, add your Anthropic API key and tap "Test key".</li>
-        </ol>
         <button class="ghost" id="out" type="button">Sign out</button>
       </div>
     </section>
+    <section class="card" style="margin-top:16px">
+      <h2>How to start</h2>
+      <ol class="steps" style="margin-top:10px">
+        <li>Download the app and open the file. If Android asks, allow installs from your browser.</li>
+        <li>Open Tasking and enter your access code. The app stays locked without one.</li>
+        <li>In Settings, add your Anthropic API key and tap "Test key".</li>
+      </ol>
+    </section>
+    </div>
   </div>
 
   <footer>A code works on the phone it is first used on. Changing phone? Ask for your code to be reset.</footer>
@@ -101,14 +107,28 @@
   const day = (v) => new Date(v).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
   const remember = { get() { try { return localStorage.getItem("tasking_code") || ""; } catch { return ""; } }, set(v) { try { v ? localStorage.setItem("tasking_code", v) : localStorage.removeItem("tasking_code"); } catch {} } };
 
-  async function portal(code) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/customer_portal`, {
+  async function rpc(fn, body) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
       method: "POST",
       headers: { "content-type": "application/json", apikey: SUPABASE_PUBLISHABLE_KEY, authorization: `Bearer ${SUPABASE_PUBLISHABLE_KEY}` },
-      body: JSON.stringify({ p_code: code }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error("unreachable");
     return res.json();
+  }
+  const portal = (code) => rpc("customer_portal", { p_code: code });
+
+  // The download is open to everyone. The app itself asks for the code.
+  async function loadDownload() {
+    try {
+      const d = await rpc("app_download", {});
+      if (!/^https:\/\//.test(d.apk_url || "")) { $("dlNote").textContent = "The download will be available here soon."; return; }
+      $("download").href = d.apk_url; $("download").hidden = false;
+      $("download").textContent = d.apk_version ? `Download for Android · v${d.apk_version}` : "Download for Android";
+      $("dlNote").textContent = "Free to download. You need an access code to use it.";
+    } catch {
+      $("dlNote").textContent = "The download link could not be loaded. Refresh the page.";
+    }
   }
 
   function show(a) {
@@ -124,11 +144,6 @@
     $("aCode").textContent = a.code;
     $("aEnds").textContent = a.expires_at ? day(a.expires_at) : `${a.valid_days} days after first use`;
     $("aPhones").textContent = `${a.devices_used} of ${a.max_devices} in use`;
-    const usable = !a.revoked && !a.expired;
-    const link = usable && /^https:\/\//.test(a.apk_url || "") ? a.apk_url : "";
-    $("download").hidden = !link; $("steps").hidden = !link;
-    if (link) { $("download").href = link; $("download").textContent = a.apk_version ? `Download for Android · v${a.apk_version}` : "Download for Android"; }
-    $("dlNote").textContent = link ? "Android only for now." : usable ? "The download isn't available yet. Check back soon." : "";
     $("signin").hidden = true; $("account").hidden = false;
   }
 
@@ -147,6 +162,7 @@
 
   $("f").addEventListener("submit", (ev) => { ev.preventDefault(); signIn($("code").value.trim()); });
   $("out").addEventListener("click", () => { remember.set(""); $("code").value = ""; $("account").hidden = true; $("signin").hidden = false; });
+  loadDownload();
   if (remember.get()) signIn(remember.get(), true);
 </script>
 </body>
