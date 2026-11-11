@@ -122,12 +122,14 @@
   async function loadDownload() {
     try {
       const d = await rpc("app_download", {});
-      if (!/^https:\/\//.test(d.apk_url || "")) { $("dlNote").textContent = "The download will be available here soon."; return; }
-      $("download").href = d.apk_url; $("download").hidden = false;
-      $("download").textContent = d.apk_version ? `Download for Android · v${d.apk_version}` : "Download for Android";
-      $("dlNote").textContent = "Free to download. You need an access code to use it.";
+      const url = d.apk_url || "";
+      const isExpo = /^exp:\/\//.test(url);
+      if (!/^https?:\/\//.test(url) && !isExpo) { $("dlNote").textContent = "The Expo Go link will be available here soon."; return; }
+      $("download").href = url; $("download").hidden = false;
+      $("download").textContent = d.apk_version ? `Open in Expo Go · v${d.apk_version}` : "Open in Expo Go";
+      $("dlNote").textContent = "Use this on your phone in Expo Go. You do not need a separate app install.";
     } catch {
-      $("dlNote").textContent = "The download link could not be loaded. Refresh the page.";
+      $("dlNote").textContent = "The Expo Go link could not be loaded. Refresh the page.";
     }
   }
 
